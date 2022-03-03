@@ -142,7 +142,7 @@ int main(void)
 	HAL_TIM_PWM_Start(Servo_Timer, Servo_Salida); // PA3 - Inicia el canal 4 del Timer 2 como PWM Generation CH3
 
 	__HAL_TIM_SET_COMPARE(Servo_Timer, Servo_Entrada, 1); //Cierro la barrera. Con un CCR de 1 el servo esta a 0°, ciclo de actividad de 1ms
-	__HAL_TIM_SET_COMPARE(Servo_Timer, Servo_Salida, 1); //Cierro la barrera. Con un CCR de 1 el servo esta a 0°, ciclo de actividad de 1ms
+	__HAL_TIM_SET_COMPARE(Servo_Timer, Servo_Salida, 2); //Cierro la barrera. Con un CCR de 2 el servo esta a 0°, ciclo de actividad de 2ms
 
 	HAL_UART_Receive_IT(&huart6, (uint8_t *)Rx_Buffer_Uart, 1);
 
@@ -398,7 +398,7 @@ void Control_Barrera_Salida(void)
 				if(Distancia_cm_Salida_1<5 && Distancia_cm_Salida_1>0 && Cantidad_Autos>0)
 				{
 					Estado_Ultrasonido_Salida_1=CONFIRM;
-					__HAL_TIM_SET_COMPARE(Servo_Timer, Servo_Salida, 2); //Abro la barrera. Con un CCR de 2 el servo esta a 90°, ciclo de actividad de 2ms
+					__HAL_TIM_SET_COMPARE(Servo_Timer, Servo_Salida, 1); //Abro la barrera. Con un CCR de 1 el servo esta a 90°, ciclo de actividad de 1ms
 				}
 			break;
 
@@ -426,7 +426,7 @@ void Control_Barrera_Salida(void)
 				if(Distancia_cm_Salida_2>5)
 				{
 					Estado_Ultrasonido_Salida_2=IDLE;
-					__HAL_TIM_SET_COMPARE(Servo_Timer, Servo_Salida, 1); //Cierro la barrera. Con un CCR de 1 el servo esta a 0°, ciclo de actividad de 1ms
+					__HAL_TIM_SET_COMPARE(Servo_Timer, Servo_Salida, 2); //Cierro la barrera. Con un CCR de 2 el servo esta a 0°, ciclo de actividad de 2ms
 					Flag_Cruce_Salida_2=ON;
 				}
 				break;
@@ -481,11 +481,11 @@ void UART_Tx_Rx(void)
 			break;
 
 			case 'c': //Abrir la barrera de salida
-				__HAL_TIM_SET_COMPARE(Servo_Timer, Servo_Salida, 2); //Abro la barrera. Con un CCR de 2 el servo esta a 90°, ciclo de actividad de 2ms
+				__HAL_TIM_SET_COMPARE(Servo_Timer, Servo_Salida, 1); //Abro la barrera. Con un CCR de 1 el servo esta a 90°, ciclo de actividad de 1ms
 			break;
 
 			case 'd': //Cerrar la barrera de salida
-				__HAL_TIM_SET_COMPARE(Servo_Timer, Servo_Salida, 1); //Cierro la barrera. Con un CCR de 1 el servo esta a 0°, ciclo de actividad de 1ms
+				__HAL_TIM_SET_COMPARE(Servo_Timer, Servo_Salida, 2); //Cierro la barrera. Con un CCR de 2 el servo esta a 0°, ciclo de actividad de 2ms
 			break;
 
 			default:
