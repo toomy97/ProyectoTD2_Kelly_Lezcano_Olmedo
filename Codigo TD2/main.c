@@ -49,6 +49,7 @@ void Mensaje_Display(void);
 
 //2 Servomotores
 //El periodo del servomotor tiene que ser de 20mseg para el PWM
+//El PWM para los servos esta configurado para que al 100% de ciclo de actividad (CCR=19) sea un estado alto de 20ms
 #define Servo_Timer &htim2
 #define Servo_Entrada TIM_CHANNEL_3 //El Timer 2 Canal 3 corresponde a PA2
 #define Servo_Salida TIM_CHANNEL_4 //El Timer 2 Canal 4 corresponde a PA3
@@ -59,6 +60,7 @@ void Mensaje_Display(void);
 #define VACIO 0
 #define LLENO 1
 
+//Contadores
 uint16_t Contador_Sensor_Distancia_Entrada=0;
 uint16_t Contador_Sensor_Distancia_Salida_1=0;
 uint16_t Contador_Sensor_Distancia_Salida_2=0;
@@ -98,8 +100,9 @@ uint8_t Flag_Cruce_Entrada=OFF;
 uint8_t Flag_Cruce_Salida_1=OFF;
 uint8_t Flag_Cruce_Salida_2=OFF;
 uint8_t Flag_RFID=OFF;
-
 uint8_t Cantidad_Autos=0;
+
+//Display
 uint8_t Estacionamientos_Disponibles=0;
 char Estacionamientos[0];
 
@@ -108,6 +111,7 @@ uint8_t Estado;
 uint8_t String[16]; //MAX length = 16
 uint8_t Numero_Serie[5];
 
+//Variables para mostrar por el display las tres distancias
 char Distancia_Entrada[4]="";
 char Distancia_Salida_1[4]="";
 char Distancia_Salida_2[4]="";
@@ -130,12 +134,15 @@ int main(void)
 
 	HAL_TIM_Base_Start_IT(&htim1); //Inicia el Timer 1 como base de tiempos por interrupcion, interrumpe cada 1mseg
 
-	HAL_TIM_IC_Start_IT(ECHO_Timer, ECHO_Entrada); //Inicia el Canal 1 del Timer 3 como Input Capture (IC) Direct Mode
-	HAL_TIM_IC_Start_IT(ECHO_Timer, ECHO_Salida_1); //Inicia el Canal 2 del Timer 3 como Input Capture (IC) Direct Mode
-	HAL_TIM_IC_Start_IT(ECHO_Timer, ECHO_Salida_2); //Inicia el Canal 3 del Timer 3 como Input Capture (IC) Direct Mode
+	HAL_TIM_IC_Start_IT(ECHO_Timer, ECHO_Entrada); // PA6 - Inicia el Canal 1 del Timer 3 como Input Capture (IC) Direct Mode
+	HAL_TIM_IC_Start_IT(ECHO_Timer, ECHO_Salida_1); // PA7 - Inicia el Canal 2 del Timer 3 como Input Capture (IC) Direct Mode
+	HAL_TIM_IC_Start_IT(ECHO_Timer, ECHO_Salida_2); // PB0 - Inicia el Canal 3 del Timer 3 como Input Capture (IC) Direct Mode
 
-	HAL_TIM_PWM_Start(Servo_Timer, Servo_Entrada);
-	HAL_TIM_PWM_Start(Servo_Timer, Servo_Salida);
+	HAL_TIM_PWM_Start(Servo_Timer, Servo_Entrada); // PA2 - Inicia el canal 3 del Timer 2 como PWM Generation CH3
+	HAL_TIM_PWM_Start(Servo_Timer, Servo_Salida); // PA3 - Inicia el canal 4 del Timer 2 como PWM Generation CH3
+
+	__HAL_TIM_SET_COMPARE(Servo_Timer, Servo_Entrada, 1); //Cierro la barrera. Con un CCR de 1 el servo esta a 0°, ciclo de actividad de 1ms
+	__HAL_TIM_SET_COMPARE(Servo_Timer, Servo_Salida, 1); //Cierro la barrera. Con un CCR de 1 el servo esta a 0°, ciclo de actividad de 1ms
 
 	HAL_UART_Receive_IT(&huart6, (uint8_t *)Rx_Buffer_Uart, 1);
 
@@ -170,10 +177,10 @@ void Sensores_Distancia(void)
 {
 	if(Contador_Sensor_Distancia_Entrada>=925)
 	{
-		//Activo los Triggers de ambos sensores de ultrasonido
+		//Activo el Trigger PA8
 		HAL_GPIO_WritePin(TRIG_Entrada, 1);
-		HAL_Delay(0.0001); //El delay tiene que ser de aproximadamente 10useg
-		//Desactivo los Triggers de ambos sensores de ultrasonido
+		HAL_Delay(0.0001); //El delay tiene que ser de aproximadamente 10useg, en este caso es de 100nseg
+		//Desactivo el Trigger PA8
 		HAL_GPIO_WritePin(TRIG_Entrada, 0);
 
 		__HAL_TIM_ENABLE_IT(ECHO_Timer, TIM_IT_CC1);
@@ -183,7 +190,7 @@ void Sensores_Distancia(void)
 	if(Contador_Sensor_Distancia_Salida_1>=950)
 	{
 		HAL_GPIO_WritePin(TRIG_Salida_1, 1);
-		HAL_Delay(0.0001); //El delay tiene que ser de aproximadamente 10useg
+		HAL_Delay(0.0001);
 		HAL_GPIO_WritePin(TRIG_Salida_1, 0);
 
 		__HAL_TIM_ENABLE_IT(ECHO_Timer, TIM_IT_CC2);
@@ -193,7 +200,7 @@ void Sensores_Distancia(void)
 	if(Contador_Sensor_Distancia_Salida_2>=975)
 	{
 		HAL_GPIO_WritePin(TRIG_Salida_2, 1);
-		HAL_Delay(0.0001); //El delay tiene que ser de aproximadamente 10useg
+		HAL_Delay(0.0001);
 		HAL_GPIO_WritePin(TRIG_Salida_2, 0);
 
 		__HAL_TIM_ENABLE_IT(ECHO_Timer, TIM_IT_CC3);
@@ -331,6 +338,7 @@ void Lectura_RFID(void) //3,3v=RST=3v, GND=0v, MISO: PC2, MOSI: PC3, SCK: PB10, 
 			else //if((Numero_Serie[1]!=132) && (Numero_Serie[1]!=209) && (Numero_Serie[1]!=80))
 			{
 				Flag_RFID=OFF;
+				__HAL_TIM_SET_COMPARE(Servo_Timer, Servo_Entrada, 1); //Cierro la barrera. Con un CCR de 1 el servo esta a 0°, ciclo de actividad de 1ms
 			}
 		}
 
@@ -340,7 +348,7 @@ void Lectura_RFID(void) //3,3v=RST=3v, GND=0v, MISO: PC2, MOSI: PC3, SCK: PB10, 
 
 void Control_Barrera_Entrada(void)
 {
-//----------Barrera de Entrada--------->Trabajan el Canal 1 del Timer 3 y el Lector RFID
+//----------Barrera de Entrada--------->Trabajan el Canal 1 del Timer 3 (PA6) y el Lector RFID
 
 	if(Flag_Control_Barrera_Entrada==1)
 	{
@@ -378,13 +386,7 @@ void Control_Barrera_Entrada(void)
 
 void Control_Barrera_Salida(void)
 {
-	//El PWM para los servos esta configurado para que al 100% de ciclo de actividad (19) sea un estado alto de 20ms
-	/*__HAL_TIM_SET_COMPARE(Servo_Timer, Servo_Salida, 1); //Con un CCR de 1 el servo esta a 0°, ciclo de actividad de 1ms
-	HAL_Delay(3000);
-	__HAL_TIM_SET_COMPARE(Servo_Timer, Servo_Salida, 2); //Con un CCR de 2 el servo esta a 90°, ciclo de actividad de 2ms
-	HAL_Delay(3000);*/
-
-//----------Barrera de Salida--------->Trabajan el Canal 2 y el Canal 3 del Timer 3
+//----------Barrera de Salida--------->Trabajan el Canal 2 (PA7) y el Canal 3 (PB0) del Timer 3
 
 	if(Flag_Control_Barrera_Salida==1)
 	{
@@ -510,6 +512,7 @@ void Mensaje_Display(void)
 {
 	if(Contador_Display>=999)
 	{
+		//Codigo para mostrar en el display las tres distancias medidas por los sensores ultrasonicos
 		/*Display_Ubicar_Cursor(0, 0);
 		Display_Enviar_String("D1: ");
 		sprintf(Distancia_Entrada, "%d", Distancia_cm_Entrada);
